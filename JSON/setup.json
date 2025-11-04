@@ -14,21 +14,21 @@
     }
   ],
   "general": {
-    "basePath": "/Sandbox/",
-    "author": "David Dufourq",
+    "basePath": "/Spatial-Sense/",
+    "author": "Peter Dufourq",
     "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
     "og": {
       "locale": "en_AU",
-      "site_name": "Behive",
+      "site_name": "Spatial Sense",
       "type": "website",
-      "image": "https://rainwilds.github.io/img/logo.jpg"
+      "image": "https://spatialsense.com/img/logos/logo-full-light-1.svg"
     },
     "x": {
       "card": "summary_large_image",
-      "domain": "rainwilds.github.io",
-      "site": "@behive"
+      "domain": "spatialsense.com",
+      "site": "@spatialsense"
     },
-    "include_e_commerce": true,
+    "include_e_commerce": false,
     "favicons": [
       {
         "rel": "icon",
@@ -48,7 +48,7 @@
       }
     ],
     "snipcart": {
-      "publicApiKey": "NTMzMTQxN2UtNjQ3ZS00ZWNjLWEyYmEtOTNiNGMwNzYyYWNlNjM4ODA0NjY5NzE2NjExMzg5",
+      "publicApiKey": "",
       "loadStrategy": "on-user-interaction",
       "version": "",
       "templatesUrl": "./plugins/snipcart.html",
@@ -58,8 +58,8 @@
     }
   },
   "business": {
-    "name": "Behive",
-    "url": "https://rainwilds.github.io",
+    "name": "Spatial Sense",
+    "url": "https://spatialsense.com",
     "telephone": "+61-3-9876-5432",
     "address": {
       "streetAddress": "456 Creative Lane",
@@ -84,8 +84,7 @@
     "base_path": "img/icons/fontawesome/",
     "core": "js/fontawesome.min.js",
     "packages": [
-      "utility-fill-semibold.min.js",
-      "utility-semibold.min.js"
+      "sharp-light.min.js"
     ],
     "defer": true
   },
@@ -99,24 +98,20 @@
   },
   "headerNavigation": [
     {
-      "text": "Home",
-      "href": "/"
-    },
-    {
       "text": "About",
       "href": "/about"
     },
     {
-      "text": "Services",
-      "href": "/services"
+      "text": "Portfolio",
+      "href": "/portfolio.html"
     },
     {
       "text": "Blog",
-      "href": "/blog"
+      "href": "/blog.html"
     },
     {
       "text": "Contact",
-      "href": "/contact"
+      "href": "/contact.html"
     }
   ],
   "footerNavigation": [
