@@ -1,13 +1,13 @@
 {
   "fonts": [
     {
-      "href": "./fonts/Futura_PT_Demi.woff2",
+      "href": "./fonts/ibm_plex_sans_light-webfont.woff2",
       "as": "font",
       "type": "font/woff2",
       "crossorigin": "anonymous"
     },
     {
-      "href": "./fonts/futura_pt_book.woff2",
+      "href": "./fonts/space_grotesk_light-webfont.woff2",
       "as": "font",
       "type": "font/woff2",
       "crossorigin": "anonymous"

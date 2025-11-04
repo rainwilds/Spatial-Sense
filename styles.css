@@ -1,14 +1,14 @@
 @font-face {
-    font-family: 'Futura_PT_Demi';
-    src: url('fonts/Futura_PT_Demi.woff2') format('woff2');
+    font-family: 'ibm_plex_sanslight';
+    src: url('fonts/ibm_plex_sans_light-webfont.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
 }
 
 @font-face {
-    font-family: 'futura_ptbook';
-    src: url('./fonts/futura_pt_book.woff2') format('woff2');
+    font-family: 'space_grotesklight';
+    src: url('./fonts/space_grotesk_light-webfont.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -220,11 +220,11 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
 
-        --font-1-family: Futura_PT_Demi,
+        --font-1-family: space_grotesklight,
             Arial,
             sans-serif;
 
-        --font-2-family: futura_ptbook,
+        --font-2-family: ibm_plex_sanslight,
             Arial,
             sans-serif;
 
@@ -252,8 +252,6 @@
 
         --filter-blur: none;
         --filter-grayscale: none;
-
-    }
 
 }
 
