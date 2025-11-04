@@ -1,0 +1,21 @@
+name: Sync with template
+
+on:
+  workflow_dispatch:  # Allows manual triggering via the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Template Sync
+        uses: AndreasAugustin/actions-template-sync@v2
+        with:
+          source_gh_token: ${{ secrets.TKN2 }}
+          source_repo_path: "rainwilds/Sandbox"  # Replace with the template repo, e.g., "github/docs"
+          upstream_branch: "main"  # Replace with the template's branch if not "main"
+          pr_title: "Sync updates from template"
+          pr_labels: "template-sync,automated"
