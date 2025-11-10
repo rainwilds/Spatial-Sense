@@ -184,11 +184,9 @@ async function updateHead(attributes, setup) {
       return script;
     };
 
-    // Core
     criticalFrag.appendChild(makeScript(fa.core));
     logger.log(`Added FA core: ${base}${fa.core}`);
 
-    // Packages
     if (Array.isArray(fa.packages) && fa.packages.length) {
       fa.packages.forEach(pkg => {
         criticalFrag.appendChild(makeScript(pkg));
@@ -210,7 +208,6 @@ async function updateHead(attributes, setup) {
 
       if (imageTemplates.length > 0) {
         const actualCount = Math.min(count, imageTemplates.length);
-
         const defaultWidths = VIEWPORT_BREAKPOINTS
           .map(bp => bp.maxWidth)
           .filter(w => Number.isFinite(w));
@@ -221,7 +218,6 @@ async function updateHead(attributes, setup) {
         const sizes = attributes.heroSize || '100vw';
         const format = attributes.heroFormat || 'avif';
 
-        // Load paths from config (same as image-generator.js)
         const [responsivePath, primaryPath] = await Promise.all([
           import('../config.js').then(m => m.getImageResponsivePath()),
           import('../config.js').then(m => m.getImagePrimaryPath())
@@ -233,31 +229,23 @@ async function updateHead(attributes, setup) {
 
         for (let i = 0; i < actualCount; i++) {
           let raw = imageTemplates[i];
-
-          // Normalize input: remove path, extension, and any existing -XXXX
-          const hasFullPath = raw.startsWith('/');
           const cleanName = raw
             .replace(/^\/+/, '')
             .replace(/-\d+$/, '')
             .replace(/\.[^/.]+$/, '');
 
-          // Build srcset: ALL sizes get -WIDTH except the largest (unless primary JPG)
           const srcset = widths
             .map(w => {
               const isLargest = w === largestWidth;
               const filename = isLargest && !usePrimary
-                ? `${cleanName}.${format}`  // ← largest AVIF/WebP: NO suffix
+                ? `${cleanName}.${format}`
                 : `${cleanName}-${w}.${format}`;
               const path = (isLargest && usePrimary) ? primaryPath : responsivePath;
               return `${path}${filename} ${w}w`;
             })
             .join(', ');
 
-          // href = largest image
-          const hrefFilename = usePrimary
-            ? `${cleanName}.${format}`  // primary JPG: no suffix
-            : `${cleanName}.${format}`; // ← largest AVIF: NO -3840
-
+          const hrefFilename = usePrimary ? `${cleanName}.${format}` : `${cleanName}.${format}`;
           const hrefPath = usePrimary ? primaryPath : responsivePath;
           const finalHref = `${hrefPath}${hrefFilename}`;
 
@@ -276,7 +264,6 @@ async function updateHead(attributes, setup) {
             format,
             largest: largestWidth,
             usePrimary,
-            hasFullPath,
             cleanName
           });
         }
@@ -402,39 +389,32 @@ async function updateHead(attributes, setup) {
     criticalFrag.appendChild(link);
   });
 
-  // ——— SNIPCART ———
+  // ——— SNIPCART (OFFICIAL LOADER SCRIPT) ———
   if (setup.general?.include_e_commerce && setup.general?.snipcart) {
-    const snip = setup.general.snipcart;
+    const snipcart = setup.general.snipcart;
+    const version = snipcart.version?.trim() || undefined;  // undefined = latest (internal default "3.0")
 
-    const settings = {
-      publicApiKey: snip.publicApiKey,
-      loadStrategy: snip.loadStrategy || 'on-user-interaction',
-      modalStyle: snip.modalStyle,
-      templatesUrl: snip.templatesUrl,
-      currency: snip.currency?.toLowerCase(),
-      ...(snip.version && snip.version.trim() ? { version: snip.version.trim() } : {}),
-      ...(snip.loadCSS === false ? { loadCSS: false } : {})
+    // Build window.SnipcartSettings
+    window.SnipcartSettings = {
+      publicApiKey: snipcart.publicApiKey,
+      loadStrategy: snipcart.loadStrategy || 'on-user-interaction',
+      modalStyle: snipcart.modalStyle,
+      templatesUrl: snipcart.templatesUrl,
+      currency: snipcart.currency,
+      loadCSS: snipcart.loadCSS !== false,
+      ...(version && { version })  // Only add if pinned
     };
 
-    const script = document.createElement('script');
-    script.textContent = `
-    window.SnipcartSettings = ${JSON.stringify(settings)};
-    (function(){var c,d;(d=(c=window.SnipcartSettings).version)!=null||(c.version="3.0");var s,S;(S=(s=window.SnipcartSettings).timeoutDuration)!=null||(s.timeoutDuration=2750);var l,p;(p=(l=window.SnipcartSettings).domain)!=null||(l.domain="cdn.snipcart.com");var w,u;(u=(w=window.SnipcartSettings).protocol)!=null||(w.protocol="https");var m,g;(g=(m=window.SnipcartSettings).loadCSS)!=null||(m.loadCSS=!0);var y=window.SnipcartSettings.version.includes("v3.0.0-ci")||window.SnipcartSettings.version!="3.0"&&window.SnipcartSettings.version.localeCompare("3.4.0",void 0,{numeric:!0,sensitivity:"base"})===-1,f=["focus","mouseover","touchmove","scroll","keydown"];window.LoadSnipcart=o;document.readyState==="loading"?document.addEventListener("DOMContentLoaded",r):r();function r(){window.SnipcartSettings.loadStrategy?window.SnipcartSettings.loadStrategy==="on-user-interaction"&&(f.forEach(function(t){return document.addEventListener(t,o)}),setTimeout(o,window.SnipcartSettings.timeoutDuration)):o()}var a=!1;function o(){if(a)return;a=!0;let t=document.getElementsByTagName("head")[0],n=document.querySelector("#snipcart"),i=document.querySelector('src[src^="'.concat(window.SnipcartSettings.protocol,"://").concat(window.SnipcartSettings.domain,'"][src$="snipcart.js"]')),e=document.querySelector('link[href^="'.concat(window.SnipcartSettings.protocol,"://").concat(window.SnipcartSettings.domain,'"][href$="snipcart.css"]'));n||(n=document.createElement("div"),n.id="snipcart",n.setAttribute("hidden","true"),document.body.appendChild(n)),h(n),i||(i=document.createElement("script"),i.src="".concat(window.SnipcartSettings.protocol,"://").concat(window.SnipcartSettings.domain,"/themes/v").concat(window.SnipcartSettings.version,"/default/snipcart.js"),i.async=!0,t.appendChild(i)),!e&&window.SnipcartSettings.loadCSS&&(e=document.createElement("link"),e.rel="stylesheet",e.type="text/css",e.href="".concat(window.SnipcartSettings.protocol,"://").concat(window.SnipcartSettings.domain,"/themes/v").concat(window.SnipcartSettings.version,"/default/snipcart.css"),t.prepend(e)),f.forEach(function(v){return document.removeEventListener(v,o)})}function h(t){!y||(t.dataset.apiKey=window.SnipcartSettings.publicApiKey,window.SnipcartSettings.addProductBehavior&&(t.dataset.configAddProductBehavior=window.SnipcartSettings.addProductBehavior),window.SnipcartSettings.modalStyle&&(t.dataset.configModalStyle=window.SnipcartSettings.modalStyle),window.SnipcartSettings.currency&&(t.dataset.currency=window.SnipcartSettings.currency),window.SnipcartSettings.templatesUrl&&(t.dataset.templatesUrl=window.SnipcartSettings.templatesUrl))}})();
-
-    // ——— MOVE #snipcart INTO YOUR #snipcart-container ———
-    document.addEventListener('snipcart.ready', () => {
-      const container = document.getElementById('snipcart-container');
-      const snipcartDiv = document.getElementById('snipcart');
-
-      if (container && snipcartDiv && !container.contains(snipcartDiv)) {
-        container.appendChild(snipcartDiv);
-        snipcartDiv.removeAttribute('hidden');
-      }
-    });
+    // Official loader script (minified from docs)
+    const loaderScript = document.createElement('script');
+    loaderScript.textContent = `
+    (function(){var c,d;(d=(c=window.SnipcartSettings).version)!=null||(c.version="3.0");var s,S;(S=(s=window.SnipcartSettings).timeoutDuration)!=null||(s.timeoutDuration=2750);var l,p;(p=(l=window.SnipcartSettings).domain)!=null||(l.domain="cdn.snipcart.com");var w,u;(u=(w=window.SnipcartSettings).protocol)!=null||(w.protocol="https");var m,g;(g=(m=window.SnipcartSettings).loadCSS)!=null||(m.loadCSS=!0);var y=window.SnipcartSettings.version.includes("v3.0.0-ci")||window.SnipcartSettings.version!="3.0"&&window.SnipcartSettings.version.localeCompare("3.4.0",void 0,{numeric:!0,sensitivity:"base"})===-1,f=["focus","mouseover","touchmove","scroll","keydown"];window.LoadSnipcart=o;document.readyState==="loading"?document.addEventListener("DOMContentLoaded",r):r();function r(){window.SnipcartSettings.loadStrategy?window.SnipcartSettings.loadStrategy==="on-user-interaction"&&(f.forEach(function(t){return document.addEventListener(t,o)}),setTimeout(o,window.SnipcartSettings.timeoutDuration)):o()}var a=!1;function o(){if(a)return;a=!0;let t=document.getElementsByTagName("head")[0],n=document.querySelector("#snipcart"),i=document.querySelector('script[src^="'.concat(window.SnipcartSettings.protocol,"://").concat(window.SnipcartSettings.domain,'"][src$="snipcart.js"]')),e=document.querySelector('link[href^="'.concat(window.SnipcartSettings.protocol,"://").concat(window.SnipcartSettings.domain,'"][href$="snipcart.css"]'));n||(n=document.createElement("div"),n.id="snipcart",n.setAttribute("hidden","true"),document.body.appendChild(n)),h(n),i||(i=document.createElement("script"),i.src="".concat(window.SnipcartSettings.protocol,"://").concat(window.SnipcartSettings.domain,"/themes/v").concat(window.SnipcartSettings.version,"/default/snipcart.js"),i.async=!0,t.appendChild(i)),!e&&window.SnipcartSettings.loadCSS&&(e=document.createElement("link"),e.rel="stylesheet",e.type="text/css",e.href="".concat(window.SnipcartSettings.protocol,"://").concat(window.SnipcartSettings.domain,"/themes/v").concat(window.SnipcartSettings.version,"/default/snipcart.css"),t.prepend(e)),f.forEach(function(v){return document.removeEventListener(v,o)})}function h(t){!y||(t.dataset.apiKey=window.SnipcartSettings.publicApiKey,window.SnipcartSettings.addProductBehavior&&(t.dataset.configAddProductBehavior=window.SnipcartSettings.addProductBehavior),window.SnipcartSettings.modalStyle&&(t.dataset.configModalStyle=window.SnipcartSettings.modalStyle),window.SnipcartSettings.currency&&(t.dataset.currency=window.SnipcartSettings.currency),window.SnipcartSettings.templatesUrl&&(t.dataset.templatesUrl=window.SnipcartSettings.templatesUrl))}})();
   `;
-
-    deferredFrag.appendChild(script);
-    logger.log('Snipcart + #snipcart-container mover injected', settings);
+    deferredFrag.appendChild(loaderScript);
+    logger.log('Snipcart official loader injected', {
+      version: version || 'latest (defaults to 3.0 internally)',
+      settings: window.SnipcartSettings
+    });
   }
 
   head.appendChild(criticalFrag);
