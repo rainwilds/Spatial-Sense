@@ -1,13 +1,11 @@
-/* global HTMLElement, document, window, JSON, console */
 import { generatePictureMarkup } from '../generators/image-generator.js';
 import { generateVideoMarkup } from '../generators/video-generator.js';
-import { VALID_ALIGNMENTS, VALID_ALIGN_MAP, BACKDROP_FILTER_MAP } from '../shared.js';
+import { ALLOWED_ICON_STYLES, ALLOWED_BUTTON_STYLES, ALLOWED_LIST_STYLES, VALID_ALIGNMENTS, VALID_ALIGN_MAP, BACKDROP_FILTER_MAP } from '../shared.js';
 import { getConfig, getImagePrimaryPath } from '../config.js';
 
 class CustomBlock extends HTMLElement {
     #ignoredChangeCount;
     #basePath = null;
-
     constructor() {
         super();
         this.isVisible = true; // Always consider visible for immediate init
@@ -20,9 +18,7 @@ class CustomBlock extends HTMLElement {
         this.debug = new URLSearchParams(window.location.search).get('debug') === 'true';
         this.#ignoredChangeCount = 0;
     }
-
     static #renderCacheMap = new WeakMap();
-
     static #criticalAttributes = [
         'backdrop-filter', 'background-color', 'background-gradient', 'background-image-noise',
         'background-overlay', 'border', 'border-radius', 'button-aria-label', 'button-class',
@@ -35,17 +31,18 @@ class CustomBlock extends HTMLElement {
         'inner-background-color', 'inner-background-gradient', 'inner-background-image-noise',
         'inner-background-overlay', 'inner-border', 'inner-border-radius', 'inner-class',
         'inner-shadow', 'inner-style', 'section-title', 'style', 'sub-heading', 'sub-heading-tag',
-        'text', 'text-alignment', 'video-background-alt', 'video-background-autoplay',
-        'video-background-dark-poster', 'video-background-dark-src', 'video-background-disable-pip',
-        'video-background-light-poster', 'video-background-light-src', 'video-background-loading',
-        'video-background-loop', 'video-background-muted', 'video-background-playsinline',
-        'video-background-poster', 'video-background-src', 'video-primary-alt',
+        'video-background-alt', 'video-background-autoplay',
+        'video-background-dark-poster', 'video-background-dark-src',
+        'video-background-disable-pip', 'video-background-light-poster', 'video-background-light-src',
+        'video-background-loading', 'video-background-loop', 'video-background-muted',
+        'video-background-playsinline', 'video-background-poster', 'video-background-src', 'video-primary-alt',
         'video-primary-autoplay', 'video-primary-dark-poster', 'video-primary-dark-src',
         'video-primary-disable-pip', 'video-primary-light-poster', 'video-primary-light-src',
         'video-primary-loading', 'video-primary-loop', 'video-primary-muted',
-        'video-primary-playsinline', 'video-primary-poster', 'video-primary-src'
+        'video-primary-playsinline', 'video-primary-poster', 'video-primary-src',
+        'paragraph', 'ul-items', 'ol-items', 'content-order', 'ul-icon', 'ol-icon', 'ul-icon-position', 'ol-icon-position',
+        'ul-style', 'ol-style', 'ul-icon-offset', 'ol-icon-offset'
     ];
-
     #log(message, data = null) {
         if (this.debug) {
             console.groupCollapsed(`%c[CustomBlock] ${message}`, 'color: #2196F3; font-weight: bold;');
@@ -54,7 +51,6 @@ class CustomBlock extends HTMLElement {
             console.groupEnd();
         }
     }
-
     #warn(message, data = null) {
         if (this.debug) {
             console.groupCollapsed(`%c[CustomBlock] ⚠️ ${message}`, 'color: #FF9800; font-weight: bold;');
@@ -63,7 +59,6 @@ class CustomBlock extends HTMLElement {
             console.groupEnd();
         }
     }
-
     #error(message, data = null) {
         if (this.debug) {
             console.groupCollapsed(`%c[CustomBlock] ❌ ${message}`, 'color: #F44336; font-weight: bold;');
@@ -72,7 +67,6 @@ class CustomBlock extends HTMLElement {
             console.groupEnd();
         }
     }
-
     async #getBasePath() {
         if (!this.#basePath) {
             const config = await getConfig();
@@ -81,7 +75,6 @@ class CustomBlock extends HTMLElement {
         }
         return this.#basePath;
     }
-
     async validateSrc(url) {
         if (!url || this.debug) {
             this.#log('Skipping validation', { url, reason: this.debug ? 'Debug mode' : 'Empty URL' });
@@ -100,7 +93,6 @@ class CustomBlock extends HTMLElement {
             return false;
         }
     }
-
     async getAttributes() {
         if (this.cachedAttributes) {
             this.#log('Using cached attributes', { elementId: this.id || 'no-id' });
@@ -301,15 +293,10 @@ class CustomBlock extends HTMLElement {
         const iconStyle = this.getAttribute('icon-style') || '';
         let sanitizedIconStyle = '';
         if (iconStyle) {
-            const allowedStyles = [
-                'color', 'font-size', 'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-                'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-                'display', 'text-align', 'vertical-align', 'line-height', 'width', 'height'
-            ];
             const styleParts = iconStyle.split(';').map(s => s.trim()).filter(s => s);
             sanitizedIconStyle = styleParts.filter(part => {
                 const [property] = part.split(':').map(s => s.trim());
-                return allowedStyles.includes(property);
+                return ALLOWED_ICON_STYLES.includes(property);
             }).join('; ');
             if (sanitizedIconStyle !== iconStyle) {
                 this.#warn('Unsafe CSS in icon-style sanitized', {
@@ -353,11 +340,10 @@ class CustomBlock extends HTMLElement {
         const buttonStyle = this.getAttribute('button-style') || '';
         let sanitizedButtonStyle = '';
         if (buttonStyle) {
-            const allowedStyles = ['color', 'background-color', 'border', 'border-radius', 'padding', 'margin', 'font-size', 'font-weight', 'text-align', 'display', 'width', 'height'];
             const styleParts = buttonStyle.split(';').map(s => s.trim()).filter(s => s);
             sanitizedButtonStyle = styleParts.filter(part => {
                 const [property] = part.split(':').map(s => s.trim());
-                return allowedStyles.includes(property);
+                return ALLOWED_BUTTON_STYLES.includes(property);
             }).join('; ');
             if (sanitizedButtonStyle !== buttonStyle) {
                 this.#warn('Unsafe CSS in button-style sanitized', {
@@ -454,6 +440,144 @@ class CustomBlock extends HTMLElement {
             if (remMatch) sanitizedButtonIconSize = buttonIconSize;
             else this.#warn('Invalid button icon size', { value: buttonIconSize, element: this.id || 'no-id', expected: 'Nrem format' });
         }
+        let ulIcon = this.getAttribute('ul-icon') || '';
+        if (ulIcon) {
+            ulIcon = ulIcon.replace(/['"]/g, '&quot;');
+            const parser = new DOMParser();
+            const decodedIcon = ulIcon.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+            const doc = parser.parseFromString(decodedIcon, 'text/html');
+            const iElement = doc.body.querySelector('i');
+            if (!iElement || !iElement.className.includes('fa-')) {
+                this.#warn('Invalid ul icon format', {
+                    value: ulIcon,
+                    element: this.id || 'no-id',
+                    expected: 'Font Awesome <i> tag with fa- classes'
+                });
+                ulIcon = '';
+            } else {
+                const validClasses = iElement.className.split(' ').filter(cls => cls.startsWith('fa-') || cls === 'fa-chisel');
+                if (validClasses.length === 0) {
+                    this.#warn('No valid Font Awesome classes in ul icon', {
+                        classes: iElement.className,
+                        element: this.id || 'no-id'
+                    });
+                    ulIcon = '';
+                } else {
+                    ulIcon = `<i class="${validClasses.join(' ')}"></i>`;
+                }
+            }
+        }
+        let olIcon = this.getAttribute('ol-icon') || '';
+        if (olIcon) {
+            olIcon = olIcon.replace(/['"]/g, '&quot;');
+            const parser = new DOMParser();
+            const decodedIcon = olIcon.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+            const doc = parser.parseFromString(decodedIcon, 'text/html');
+            const iElement = doc.body.querySelector('i');
+            if (!iElement || !iElement.className.includes('fa-')) {
+                this.#warn('Invalid ol icon format', {
+                    value: olIcon,
+                    element: this.id || 'no-id',
+                    expected: 'Font Awesome <i> tag with fa- classes'
+                });
+                olIcon = '';
+            } else {
+                const validClasses = iElement.className.split(' ').filter(cls => cls.startsWith('fa-') || cls === 'fa-chisel');
+                if (validClasses.length === 0) {
+                    this.#warn('No valid Font Awesome classes in ol icon', {
+                        classes: iElement.className,
+                        element: this.id || 'no-id'
+                    });
+                    olIcon = '';
+                } else {
+                    olIcon = `<i class="${validClasses.join(' ')}"></i>`;
+                }
+            }
+        }
+        const ulIconPosition = this.getAttribute('ul-icon-position') || 'left';
+        let sanitizedUlIconPosition = 'left';
+        if (ulIconPosition) {
+            const validPositions = ['left', 'right'];
+            if (validPositions.includes(ulIconPosition)) {
+                sanitizedUlIconPosition = ulIconPosition;
+            } else {
+                this.#warn('Invalid ul icon position', {
+                    value: ulIconPosition,
+                    element: this.id || 'no-id',
+                    validValues: validPositions,
+                    default: 'left'
+                });
+            }
+        }
+        const olIconPosition = this.getAttribute('ol-icon-position') || 'left';
+        let sanitizedOlIconPosition = 'left';
+        if (olIconPosition) {
+            const validPositions = ['left', 'right'];
+            if (validPositions.includes(olIconPosition)) {
+                sanitizedOlIconPosition = olIconPosition;
+            } else {
+                this.#warn('Invalid ol icon position', {
+                    value: olIconPosition,
+                    element: this.id || 'no-id',
+                    validValues: validPositions,
+                    default: 'left'
+                });
+            }
+        }
+        const ulIconOffset = this.getAttribute('ul-icon-offset') || '';
+        let sanitizedUlIconOffset = '';
+        if (ulIconOffset && sanitizedUlIconPosition) {
+            const validOffset = ulIconOffset.match(/^var\(--space-[a-z]+\)$/);
+            if (validOffset) sanitizedUlIconOffset = ulIconOffset;
+            else this.#warn('Invalid ul icon offset', {
+                value: ulIconOffset,
+                element: this.id || 'no-id',
+                expected: 'var(--space-*) format'
+            });
+        }
+        const olIconOffset = this.getAttribute('ol-icon-offset') || '';
+        let sanitizedOlIconOffset = '';
+        if (olIconOffset && sanitizedOlIconPosition) {
+            const validOffset = olIconOffset.match(/^var\(--space-[a-z]+\)$/);
+            if (validOffset) sanitizedOlIconOffset = olIconOffset;
+            else this.#warn('Invalid ol icon offset', {
+                value: olIconOffset,
+                element: this.id || 'no-id',
+                expected: 'var(--space-*) format'
+            });
+        }
+        const ulStyle = this.getAttribute('ul-style') || '';
+        let sanitizedUlStyle = '';
+        if (ulStyle) {
+            const styleParts = ulStyle.split(';').map(s => s.trim()).filter(s => s);
+            sanitizedUlStyle = styleParts.filter(part => {
+                const [property] = part.split(':').map(s => s.trim());
+                return ALLOWED_LIST_STYLES.includes(property);
+            }).join('; ');
+            if (sanitizedUlStyle !== ulStyle) {
+                this.#warn('Unsafe CSS in ul-style sanitized', {
+                    original: ulStyle,
+                    sanitized: sanitizedUlStyle,
+                    element: this.id || 'no-id'
+                });
+            }
+        }
+        const olStyle = this.getAttribute('ol-style') || '';
+        let sanitizedOlStyle = '';
+        if (olStyle) {
+            const styleParts = olStyle.split(';').map(s => s.trim()).filter(s => s);
+            sanitizedOlStyle = styleParts.filter(part => {
+                const [property] = part.split(':').map(s => s.trim());
+                return ALLOWED_LIST_STYLES.includes(property);
+            }).join('; ');
+            if (sanitizedOlStyle !== olStyle) {
+                this.#warn('Unsafe CSS in ol-style sanitized', {
+                    original: olStyle,
+                    sanitized: sanitizedOlStyle,
+                    element: this.id || 'no-id'
+                });
+            }
+        }
         const effects = this.getAttribute('effects') || '';
         let sanitizedEffects = '';
         if (effects) {
@@ -477,7 +601,6 @@ class CustomBlock extends HTMLElement {
             iconStyle: sanitizedIconStyle,
             iconClass: sanitizedIconClass,
             iconSize: sanitizedIconSize,
-            text: this.getAttribute('text') || '',
             buttonHref: this.getAttribute('button-href') || '#',
             buttonText: this.hasAttribute('button-text') ? (this.getAttribute('button-text') || 'Default') : '',
             buttonClass: sanitizedButtonClass,
@@ -568,7 +691,19 @@ class CustomBlock extends HTMLElement {
             innerAlignment: innerAlignment && VALID_ALIGNMENTS.includes(innerAlignment) ? innerAlignment : '',
             textAlignment: textAlignment && validTextAlignments.includes(textAlignment) ? textAlignment : '',
             shadowClass,
-            innerShadowClass
+            innerShadowClass,
+            paragraph: this.getAttribute('paragraph') || '',
+            ulItems: this.getAttribute('ul-items') || '',
+            olItems: this.getAttribute('ol-items') || '',
+            contentOrder: this.getAttribute('content-order') || 'paragraph,ul,ol',
+            ulIcon,
+            olIcon,
+            ulIconPosition: sanitizedUlIconPosition,
+            olIconPosition: sanitizedOlIconPosition,
+            ulIconOffset: sanitizedUlIconOffset,
+            olIconOffset: sanitizedOlIconOffset,
+            ulStyle: sanitizedUlStyle,
+            olStyle: sanitizedOlStyle
         };
         const criticalAttrs = {};
         CustomBlock.#criticalAttributes.forEach(attr => {
@@ -582,7 +717,6 @@ class CustomBlock extends HTMLElement {
         });
         return this.cachedAttributes;
     }
-
     async initialize() {
         if (this.isInitialized) {
             this.#log('Skipping initialization', {
@@ -619,12 +753,10 @@ class CustomBlock extends HTMLElement {
             this.replaceWith(fallbackElement);
         }
     }
-
     async connectedCallback() {
         this.#log('Connected to DOM', { elementId: this.id || 'no-id' });
         await this.initialize();
     }
-
     disconnectedCallback() {
         this.#log('Disconnected from DOM', { elementId: this.id || 'no-id' });
         this.callbacks = [];
@@ -633,12 +765,10 @@ class CustomBlock extends HTMLElement {
         this.criticalAttributesHash = null;
         CustomBlock.#renderCacheMap.delete(this);
     }
-
     addCallback(callback) {
         this.#log('Callback added', { callbackName: callback.name || 'anonymous', elementId: this.id || 'no-id' });
         this.callbacks.push(callback);
     }
-
     async render(isFallback = false) {
         this.#log(`Starting render ${isFallback ? '(fallback)' : ''}`, { elementId: this.id || 'no-id' });
         let newCriticalAttrsHash;
@@ -664,7 +794,6 @@ class CustomBlock extends HTMLElement {
             iconStyle: '',
             iconClass: '',
             iconSize: '',
-            text: '',
             buttonHref: '#',
             buttonText: '',
             buttonClass: '',
@@ -751,14 +880,25 @@ class CustomBlock extends HTMLElement {
             innerAlignment: '',
             textAlignment: '',
             shadowClass: '',
-            innerShadowClass: ''
+            innerShadowClass: '',
+            paragraph: '',
+            ulItems: '',
+            olItems: '',
+            contentOrder: 'paragraph,ul,ol',
+            ulIcon: '',
+            olIcon: '',
+            ulIconPosition: 'left',
+            olIconPosition: 'left',
+            ulIconOffset: '',
+            olIconOffset: '',
+            ulStyle: '',
+            olStyle: ''
         } : await this.getAttributes();
         this.#log('Render attributes prepared', {
             elementId: this.id || 'no-id',
             isFallback,
             attrs: {
                 heading: attrs.heading,
-                text: attrs.text,
                 imgPrimarySrc: attrs.primarySrc,
                 buttonText: attrs.buttonText,
                 buttonHref: attrs.buttonHref
@@ -796,14 +936,18 @@ class CustomBlock extends HTMLElement {
             !attrs.heading &&
             !attrs.subHeading &&
             !attrs.icon &&
-            !attrs.text &&
+            !attrs.paragraph &&
+            !attrs.ulItems &&
+            !attrs.olItems &&
             !attrs.buttonText &&
             (hasBackgroundImage || hasVideoBackground || hasVideoPrimary);
         const isButtonOnly = !isFallback &&
             !attrs.heading &&
             !attrs.subHeading &&
             !attrs.icon &&
-            !attrs.text &&
+            !attrs.paragraph &&
+            !attrs.ulItems &&
+            !attrs.olItems &&
             !hasBackgroundImage &&
             !hasVideoBackground &&
             !hasPrimaryImage &&
@@ -813,7 +957,7 @@ class CustomBlock extends HTMLElement {
             elementId: this.id || 'no-id',
             isMediaOnly,
             isButtonOnly,
-            hasContent: !!(attrs.heading || attrs.subHeading || attrs.text || attrs.buttonText || attrs.icon)
+            hasContent: !!(attrs.heading || attrs.subHeading || attrs.paragraph || attrs.ulItems || attrs.olItems || attrs.buttonText || attrs.icon)
         });
         const paddingClasses = ['padding-small', 'padding-medium', 'padding-large'];
         const borderClasses = ['border-small', 'border-medium', 'border-large', 'border-radius-small', 'border-radius-medium', 'border-radius-large'];
@@ -1103,7 +1247,7 @@ class CustomBlock extends HTMLElement {
             }
             return blockElement;
         }
-        this.#log('Rendering content block', { elementId: this.id || 'no-id', hasContent: !!(attrs.heading || attrs.text || attrs.buttonText) });
+        this.#log('Rendering content block', { elementId: this.id || 'no-id', hasContent: !!(attrs.heading || attrs.paragraph || attrs.ulItems || attrs.olItems || attrs.buttonText) });
         const innerPaddingClasses = attrs.innerCustomClasses.split(' ').filter(cls => cls && paddingClasses.includes(cls));
         const innerDivClassList = [...innerPaddingClasses, ...attrs.innerCustomClasses.split(' ').filter(cls => cls && !cls.includes('flex-') && !paddingClasses.includes(cls))];
         if (attrs.customClasses.includes('space-between')) innerDivClassList.push('space-between');
@@ -1163,12 +1307,81 @@ class CustomBlock extends HTMLElement {
             groupDiv.appendChild(headingElement);
             this.#log('Heading appended', { text: attrs.heading });
         }
-        if (attrs.text) {
-            const textElement = document.createElement('p');
-            textElement.textContent = attrs.text;
-            groupDiv.appendChild(textElement);
-            this.#log('Text appended', { text: attrs.text });
-        }
+        const contentOrder = attrs.contentOrder.split(',').map(s => s.trim());
+        contentOrder.forEach(type => {
+            if (type === 'paragraph' && attrs.paragraph) {
+                const textElement = document.createElement('p');
+                textElement.textContent = attrs.paragraph;
+                groupDiv.appendChild(textElement);
+                this.#log('Paragraph appended', { text: attrs.paragraph });
+            } else if (type === 'ul' && attrs.ulItems) {
+                const ul = document.createElement('ul');
+                if (attrs.ulStyle) ul.setAttribute('style', attrs.ulStyle);
+                attrs.ulItems.split(',').forEach(item => {
+                    const li = document.createElement('li');
+                    li.classList.add('flex-list-item');
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'list-text';
+                    textSpan.textContent = item.trim();
+                    if (attrs.ulIcon) {
+                        const iconSpan = document.createElement('span');
+                        iconSpan.className = 'list-bullet';
+                        let listIconStyle = '';
+                        if (attrs.ulIconOffset) {
+                            const marginProperty = attrs.ulIconPosition === 'left' ? 'margin-right' : 'margin-left';
+                            listIconStyle = `${marginProperty}: ${attrs.ulIconOffset}`;
+                        }
+                        if (listIconStyle) iconSpan.setAttribute('style', listIconStyle);
+                        iconSpan.innerHTML = attrs.ulIcon;
+                        if (attrs.ulIconPosition === 'left') {
+                            li.appendChild(iconSpan);
+                            li.appendChild(textSpan);
+                        } else {
+                            li.appendChild(textSpan);
+                            li.appendChild(iconSpan);
+                        }
+                    } else {
+                        li.appendChild(textSpan);
+                    }
+                    ul.appendChild(li);
+                });
+                groupDiv.appendChild(ul);
+                this.#log('UL appended', { items: attrs.ulItems });
+            } else if (type === 'ol' && attrs.olItems) {
+                const ol = document.createElement('ol');
+                if (attrs.olStyle) ol.setAttribute('style', attrs.olStyle);
+                attrs.olItems.split(',').forEach(item => {
+                    const li = document.createElement('li');
+                    li.classList.add('flex-list-item');
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'list-text';
+                    textSpan.textContent = item.trim();
+                    if (attrs.olIcon) {
+                        const iconSpan = document.createElement('span');
+                        iconSpan.className = 'list-bullet';
+                        let listIconStyle = '';
+                        if (attrs.olIconOffset) {
+                            const marginProperty = attrs.olIconPosition === 'left' ? 'margin-right' : 'margin-left';
+                            listIconStyle = `${marginProperty}: ${attrs.olIconOffset}`;
+                        }
+                        if (listIconStyle) iconSpan.setAttribute('style', listIconStyle);
+                        iconSpan.innerHTML = attrs.olIcon;
+                        if (attrs.olIconPosition === 'left') {
+                            li.appendChild(iconSpan);
+                            li.appendChild(textSpan);
+                        } else {
+                            li.appendChild(textSpan);
+                            li.appendChild(iconSpan);
+                        }
+                    } else {
+                        li.appendChild(textSpan);
+                    }
+                    ol.appendChild(li);
+                });
+                groupDiv.appendChild(ol);
+                this.#log('OL appended', { items: attrs.olItems });
+            }
+        });
         if (attrs.buttonText) {
             const buttonElement = document.createElement(attrs.buttonType === 'button' ? 'button' : 'a');
             buttonElement.className = `button ${attrs.buttonClass}`.trim();
@@ -1368,7 +1581,6 @@ class CustomBlock extends HTMLElement {
         this.#log('Render completed', { elementId: this.id || 'no-id', html: blockElement.outerHTML.substring(0, 200) });
         return blockElement;
     }
-
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue === newValue) return;
         if (!this.isInitialized) {
@@ -1385,7 +1597,6 @@ class CustomBlock extends HTMLElement {
             this.initialize();
         }
     }
-
     static get observedAttributes() {
         return [
             'backdrop-filter', 'background-color', 'background-gradient', 'background-image-noise',
@@ -1404,7 +1615,7 @@ class CustomBlock extends HTMLElement {
             'inner-background-color', 'inner-background-gradient', 'inner-background-image-noise',
             'inner-background-overlay', 'inner-border', 'inner-border-radius', 'inner-class',
             'inner-shadow', 'inner-style', 'section-title', 'shadow', 'style', 'sub-heading',
-            'sub-heading-tag', 'text', 'text-alignment', 'video-background-alt',
+            'sub-heading-tag', 'text-alignment', 'video-background-alt',
             'video-background-autoplay', 'video-background-dark-poster', 'video-background-dark-src',
             'video-background-disable-pip', 'video-background-light-poster', 'video-background-light-src',
             'video-background-loading', 'video-background-loop', 'video-background-muted',
@@ -1413,16 +1624,15 @@ class CustomBlock extends HTMLElement {
             'video-primary-dark-src', 'video-primary-disable-pip', 'video-primary-light-poster',
             'video-primary-light-src', 'video-primary-loading', 'video-primary-loop',
             'video-primary-muted', 'video-primary-playsinline', 'video-primary-poster',
-            'video-primary-src'
+            'video-primary-src', 'paragraph', 'ul-items', 'ol-items', 'content-order', 'ul-icon', 'ol-icon', 'ul-icon-position', 'ol-icon-position',
+            'ul-style', 'ol-style', 'ul-icon-offset', 'ol-icon-offset'
         ];
     }
 }
-
 try {
     customElements.define('custom-block', CustomBlock);
 } catch (error) {
     console.error('Error defining CustomBlock element:', error);
 }
-
 console.log('CustomBlock version: 2025-09-27');
 export { CustomBlock };
