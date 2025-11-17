@@ -122,3 +122,8 @@
 .custom-slider {
     z-index: -1;
 }
+
+.flex-list-item {
+    display: grid;
+    grid-auto-flow: column;
+}
