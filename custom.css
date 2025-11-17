@@ -126,4 +126,5 @@
 .flex-list-item {
     display: grid;
     grid-auto-flow: column;
+    grid-template-columns: min-content;
 }
